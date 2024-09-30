@@ -59,20 +59,81 @@
   <script src="https://cdn.jsdelivr.net/gh/cwilso/PitchDetect/pitchdetect.js"></script>
 
   <script>
-    // Note to solfege mapping
-    const notes = [
-      { name: 'C', solfege: 'Do' },
-      { name: 'C#', solfege: 'Do#' },
-      { name: 'D', solfege: 'Re' },
-      { name: 'D#', solfege: 'Re#' },
-      { name: 'E', solfege: 'Mi' },
-      { name: 'F', solfege: 'Fa' },
-      { name: 'F#', solfege: 'Fa#' },
-      { name: 'G', solfege: 'Sol' },
-      { name: 'G#', solfege: 'Sol#' },
-      { name: 'A', solfege: 'La' },
-      { name: 'A#', solfege: 'La#' },
-      { name: 'B', solfege: 'Ti' }
+    // Define notes and their frequencies
+    const noteFrequencies = [
+      { note: 'C0', freq: 16.35, solfege: 'Do' },
+      { note: 'C#0', freq: 17.32, solfege: 'Do#' },
+      { note: 'D0', freq: 18.35, solfege: 'Re' },
+      { note: 'D#0', freq: 19.45, solfege: 'Re#' },
+      { note: 'E0', freq: 20.60, solfege: 'Mi' },
+      { note: 'F0', freq: 21.83, solfege: 'Fa' },
+      { note: 'F#0', freq: 23.12, solfege: 'Fa#' },
+      { note: 'G0', freq: 24.50, solfege: 'Sol' },
+      { note: 'G#0', freq: 25.96, solfege: 'Sol#' },
+      { note: 'A0', freq: 27.50, solfege: 'La' },
+      { note: 'A#0', freq: 29.14, solfege: 'La#' },
+      { note: 'B0', freq: 30.87, solfege: 'Ti' },
+      { note: 'C1', freq: 32.70, solfege: 'Do' },
+      { note: 'C#1', freq: 34.65, solfege: 'Do#' },
+      { note: 'D1', freq: 36.71, solfege: 'Re' },
+      { note: 'D#1', freq: 38.89, solfege: 'Re#' },
+      { note: 'E1', freq: 41.20, solfege: 'Mi' },
+      { note: 'F1', freq: 43.65, solfege: 'Fa' },
+      { note: 'F#1', freq: 46.25, solfege: 'Fa#' },
+      { note: 'G1', freq: 49.00, solfege: 'Sol' },
+      { note: 'G#1', freq: 51.91, solfege: 'Sol#' },
+      { note: 'A1', freq: 55.00, solfege: 'La' },
+      { note: 'A#1', freq: 58.27, solfege: 'La#' },
+      { note: 'B1', freq: 61.74, solfege: 'Ti' },
+      { note: 'C2', freq: 65.41, solfege: 'Do' },
+      { note: 'C#2', freq: 69.30, solfege: 'Do#' },
+      { note: 'D2', freq: 73.42, solfege: 'Re' },
+      { note: 'D#2', freq: 77.78, solfege: 'Re#' },
+      { note: 'E2', freq: 82.41, solfege: 'Mi' },
+      { note: 'F2', freq: 87.31, solfege: 'Fa' },
+      { note: 'F#2', freq: 92.50, solfege: 'Fa#' },
+      { note: 'G2', freq: 98.00, solfege: 'Sol' },
+      { note: 'G#2', freq: 103.83, solfege: 'Sol#' },
+      { note: 'A2', freq: 110.00, solfege: 'La' },
+      { note: 'A#2', freq: 116.54, solfege: 'La#' },
+      { note: 'B2', freq: 123.47, solfege: 'Ti' },
+      { note: 'C3', freq: 130.81, solfege: 'Do' },
+      { note: 'C#3', freq: 138.59, solfege: 'Do#' },
+      { note: 'D3', freq: 146.83, solfege: 'Re' },
+      { note: 'D#3', freq: 155.56, solfege: 'Re#' },
+      { note: 'E3', freq: 164.81, solfege: 'Mi' },
+      { note: 'F3', freq: 174.61, solfege: 'Fa' },
+      { note: 'F#3', freq: 185.00, solfege: 'Fa#' },
+      { note: 'G3', freq: 196.00, solfege: 'Sol' },
+      { note: 'G#3', freq: 207.65, solfege: 'Sol#' },
+      { note: 'A3', freq: 220.00, solfege: 'La' },
+      { note: 'A#3', freq: 233.08, solfege: 'La#' },
+      { note: 'B3', freq: 246.94, solfege: 'Ti' },
+      { note: 'C4', freq: 261.63, solfege: 'Do' },
+      { note: 'C#4', freq: 277.18, solfege: 'Do#' },
+      { note: 'D4', freq: 293.66, solfege: 'Re' },
+      { note: 'D#4', freq: 311.13, solfege: 'Re#' },
+      { note: 'E4', freq: 329.63, solfege: 'Mi' },
+      { note: 'F4', freq: 349.23, solfege: 'Fa' },
+      { note: 'F#4', freq: 369.99, solfege: 'Fa#' },
+      { note: 'G4', freq: 392.00, solfege: 'Sol' },
+      { note: 'G#4', freq: 415.30, solfege: 'Sol#' },
+      { note: 'A4', freq: 440.00, solfege: 'La' },
+      { note: 'A#4', freq: 466.16, solfege: 'La#' },
+      { note: 'B4', freq: 493.88, solfege: 'Ti' },
+      { note: 'C5', freq: 523.25, solfege: 'Do' },
+      { note: 'C#5', freq: 554.37, solfege: 'Do#' },
+      { note: 'D5', freq: 587.33, solfege: 'Re' },
+      { note: 'D#5', freq: 622.25, solfege: 'Re#' },
+      { note: 'E5', freq: 659.25, solfege: 'Mi' },
+      { note: 'F5', freq: 698.46, solfege: 'Fa' },
+      { note: 'F#5', freq: 739.99, solfege: 'Fa#' },
+      { note: 'G5', freq: 783.99, solfege: 'Sol' },
+      { note: 'G#5', freq: 830.61, solfege: 'Sol#' },
+      { note: 'A5', freq: 880.00, solfege: 'La' },
+      { note: 'A#5', freq: 932.33, solfege: 'La#' },
+      { note: 'B5', freq: 987.77, solfege: 'Ti' },
+      { note: 'C6', freq: 1046.50, solfege: 'Do' }
     ];
 
     // Initialize the pitch detector using pitchdetect.js
@@ -106,7 +167,7 @@
         document.getElementById('log').innerText = `Pitch detected: ${pitch.toFixed(2)} Hz`;
         const noteData = getNoteFromFrequency(pitch);
         if (noteData) {
-          document.getElementById('noteDisplay').innerText = `Note: ${noteData.name}`;
+          document.getElementById('noteDisplay').innerText = `Note: ${noteData.note}`;
           document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
         }
       });
@@ -115,12 +176,10 @@
     }
 
     function getNoteFromFrequency(frequency) {
-      const baseFrequency = 440; // A4 = 440 Hz
-      const noteIndex = Math.round(12 * Math.log2(frequency / baseFrequency)) % 12;
-      if (noteIndex >= 0 && noteIndex < notes.length) {
-        return notes[noteIndex];
-      }
-      return null;
+      let closest = noteFrequencies.reduce((prev, curr) => {
+        return (Math.abs(curr.freq - frequency) < Math.abs(prev.freq - frequency) ? curr : prev);
+      });
+      return closest;
     }
 
     window.onload = function() {
