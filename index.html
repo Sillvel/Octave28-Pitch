@@ -38,12 +38,29 @@
       margin-top: 10px;
       color: white;
     }
+
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #0074D9;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #005BB5;
+    }
   </style>
 </head>
 <body>
 
   <!-- Title -->
   <h1>Octave28 Virtual Pitch Detector</h1>
+
+  <!-- Button to start pitch detection -->
+  <button id="startButton">Start Pitch Detection</button>
 
   <!-- Pitch Detector Section -->
   <div id="detector">
@@ -210,9 +227,10 @@
       return closest;
     }
 
-    window.onload = function() {
+    // Start pitch detection when the button is clicked
+    document.getElementById('startButton').addEventListener('click', () => {
       startPitchDetection();
-    };
+    });
   </script>
 </body>
 </html>
