@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Octave28 Vocal Pitch Detector</title>
+  <title>Test Microphone Input</title>
   <style>
     body {
-      background-color: #001F3F; /* Background color */
+      background-color: #001F3F;
       font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
@@ -20,146 +20,51 @@
       font-size: 36px;
       font-weight: bold;
       text-align: center;
-      margin: 20px 0;
     }
-    #pitchBox {
-      background-color: #3A6D8C; /* Box color */
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-      width: 60%;
-    }
-    #pitchDisplay {
-      font-size: 2rem;
-      margin: 20px;
-    }
-    #noteDisplay {
-      font-size: 3rem;
-      font-weight: bold;
-    }
-    #solfegeDisplay {
-      font-size: 2rem;
-      color: #fff;
+    #log {
+      font-size: 20px;
+      color: white;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
 
-  <h1>Octave28 Vocal Pitch Detector</h1>
-  
-  <!-- The box containing pitch detection -->
-  <div id="pitchBox">
-    <div id="pitchDisplay">Pitch: -- Hz</div>
-    <div id="noteDisplay">Note: --</div>
-    <div id="solfegeDisplay">Solfège: --</div>
-  </div>
+  <h1>Testing Microphone Input</h1>
+  <div id="log">Waiting for microphone...</div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.js"></script>
   <script>
-    const notes = [
-      { name: 'C', freq: 261.63, solfege: 'Do' },
-      { name: 'C#', freq: 277.18, solfege: 'Do#' },
-      { name: 'D', freq: 293.66, solfege: 'Re' },
-      { name: 'D#', freq: 311.13, solfege: 'Re#' },
-      { name: 'E', freq: 329.63, solfege: 'Mi' },
-      { name: 'F', freq: 349.23, solfege: 'Fa' },
-      { name: 'F#', freq: 369.99, solfege: 'Fa#' },
-      { name: 'G', freq: 392.00, solfege: 'Sol' },
-      { name: 'G#', freq: 415.30, solfege: 'Sol#' },
-      { name: 'A', freq: 440.00, solfege: 'La' },
-      { name: 'A#', freq: 466.16, solfege: 'La#' },
-      { name: 'B', freq: 493.88, solfege: 'Ti' }
-    ];
-
-    const baseFrequency = 440; // A4 = 440 Hz
-    const baseNoteIndex = 9;  // A4 is the 10th note (0-indexed)
-
-    let audioContext;
-    let analyser;
-
-    async function startPitchDetection() {
+    async function testMicrophone() {
       try {
+        // Get microphone access
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         console.log('Microphone access granted');
-        
-        audioContext = new AudioContext();
+        document.getElementById('log').innerText = 'Microphone access granted';
+
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
         const source = audioContext.createMediaStreamSource(stream);
-        analyser = audioContext.createAnalyser();
         source.connect(analyser);
         analyser.fftSize = 2048;
         
-        detectPitch();
+        const buffer = new Uint8Array(analyser.fftSize);
+        function update() {
+          analyser.getByteTimeDomainData(buffer);
+
+          // Display audio input strength as a number to check if microphone is capturing data
+          const average = buffer.reduce((a, b) => a + b) / buffer.length;
+          document.getElementById('log').innerText = `Microphone input level: ${average}`;
+
+          requestAnimationFrame(update);
+        }
+        update();
       } catch (err) {
         console.error('Error accessing microphone:', err);
+        document.getElementById('log').innerText = `Error accessing microphone: ${err}`;
       }
     }
 
-    function detectPitch() {
-      const buffer = new Float32Array(analyser.fftSize);
-      analyser.getFloatTimeDomainData(buffer);
-      const frequency = autoCorrelate(buffer, audioContext.sampleRate);
-      if (frequency !== -1) {
-        console.log('Frequency detected:', frequency);  // Debugging log
-        const noteData = getNoteFromFrequency(frequency);
-        if (noteData) {
-          document.getElementById('pitchDisplay').innerText = `Pitch: ${frequency.toFixed(2)} Hz`;
-          document.getElementById('noteDisplay').innerText = `Note: ${noteData.name}${noteData.octave}`;
-          document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
-          
-          // Send detected pitch data to parent (Wix)
-          window.parent.postMessage({
-            action: 'pitchDetected',
-            pitch: frequency.toFixed(2),
-            note: noteData.name + noteData.octave,
-            solfege: noteData.solfege
-          }, '*');
-        }
-      } else {
-        console.log('No pitch detected');
-      }
-      
-      requestAnimationFrame(detectPitch);
-    }
-
-    function getNoteFromFrequency(frequency) {
-      const noteIndex = Math.round(12 * Math.log2(frequency / baseFrequency)) + baseNoteIndex;
-      const octave = Math.floor(noteIndex / 12) + 4;
-      const noteName = notes[noteIndex % 12].name;
-      const solfege = notes[noteIndex % 12].solfege;
-      return { name: noteName, solfege, octave };
-    }
-
-    function autoCorrelate(buffer, sampleRate) {
-      const SIZE = buffer.length;
-      const MAX_SAMPLES = Math.floor(SIZE / 2);
-      let bestOffset = -1;
-      let bestCorrelation = 0;
-      let rms = 0;
-      for (let i = 0; i < SIZE; i++) {
-        const val = buffer[i];
-        rms += val * val;
-      }
-      rms = Math.sqrt(rms / SIZE);
-      if (rms < 0.01) return -1;
-
-      let lastCorrelation = 1;
-      for (let offset = 0; offset < MAX_SAMPLES; offset++) {
-        let correlation = 0;
-        for (let i = 0; i < MAX_SAMPLES; i++) {
-          correlation += Math.abs(buffer[i] - buffer[i + offset]);
-        }
-        correlation = 1 - (correlation / MAX_SAMPLES);
-        if (correlation > 0.9 && correlation > lastCorrelation) {
-          bestCorrelation = correlation;
-          bestOffset = offset;
-        }
-        lastCorrelation = correlation;
-      }
-      if (bestOffset === -1) return -1;
-      return sampleRate / bestOffset;
-    }
-
-    startPitchDetection();
+    testMicrophone();
   </script>
 </body>
 </html>
