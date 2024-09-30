@@ -1,190 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Octave28 Pitch Detector</title>
-  <style>
-    body {
-      background-color: #001F3F; /* Background color */
-      font-family: Arial, sans-serif;
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Detector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2d3e50;
+            color: #ffffff;
+            text-align: center;
+            padding: 50px;
+        }
 
-    h1 {
-      font-size: 36px;
-      margin-bottom: 20px;
-    }
+        h1 {
+            font-size: 2rem;
+        }
 
-    /* Centered box under the title */
-    #detector {
-      background-color: #3A6D8C; /* Box color */
-      padding: 20px;
-      margin: 0 auto;
-      margin-bottom: 30px;
-      max-width: 700px; /* Box width matching the title */
-      border-radius: 10px; /* Rounded corners */
-    }
+        #detector {
+            display: inline-block;
+            padding: 20px;
+            border: 3px solid #4caf50;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
 
-    #log {
-      font-size: 20px;
-      color: white;
-    }
+        .pitch {
+            font-size: 2rem;
+            margin-top: 20px;
+        }
 
-    #noteDisplay, #solfegeDisplay {
-      font-size: 28px;
-      margin-top: 10px;
-      color: white;
-    }
-  </style>
+        .note {
+            font-size: 3rem;
+            margin-top: 10px;
+            color: #4caf50;
+        }
+    </style>
 </head>
 <body>
+    <h1>Pitch Detector</h1>
 
-  <!-- Title -->
-  <h1>Octave28 Virtual Pitch Detector</h1>
+    <div id="detector">
+        <div class="pitch">Frequency: <span id="pitch">--</span> Hz</div>
+        <div class="note">Note: <span id="note">--</span></div>
+    </div>
 
-  <!-- Pitch Detector Section -->
-  <div id="detector">
-    <div id="log">Waiting for microphone...</div>
-    <div id="noteDisplay">Note: --</div>
-    <div id="solfegeDisplay">Solfège: --</div>
-  </div>
+    <script>
+        let audioContext = null;
+        let analyser = null;
+        let mediaStreamSource = null;
 
-  <!-- Include Tone.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.35/Tone.js"></script>
+        const pitchElem = document.getElementById('pitch');
+        const noteElem = document.getElementById('note');
 
-  <!-- Include pitchdetect.js -->
-  <script src="https://cdn.jsdelivr.net/gh/cwilso/PitchDetect/pitchdetect.js"></script>
+        const noteStrings = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-  <script>
-    // Define notes and their frequencies
-    const noteFrequencies = [
-      { note: 'C0', freq: 16.35, solfege: 'Do' },
-      { note: 'C#0', freq: 17.32, solfege: 'Do#' },
-      { note: 'D0', freq: 18.35, solfege: 'Re' },
-      { note: 'D#0', freq: 19.45, solfege: 'Re#' },
-      { note: 'E0', freq: 20.60, solfege: 'Mi' },
-      { note: 'F0', freq: 21.83, solfege: 'Fa' },
-      { note: 'F#0', freq: 23.12, solfege: 'Fa#' },
-      { note: 'G0', freq: 24.50, solfege: 'Sol' },
-      { note: 'G#0', freq: 25.96, solfege: 'Sol#' },
-      { note: 'A0', freq: 27.50, solfege: 'La' },
-      { note: 'A#0', freq: 29.14, solfege: 'La#' },
-      { note: 'B0', freq: 30.87, solfege: 'Ti' },
-      { note: 'C1', freq: 32.70, solfege: 'Do' },
-      { note: 'C#1', freq: 34.65, solfege: 'Do#' },
-      { note: 'D1', freq: 36.71, solfege: 'Re' },
-      { note: 'D#1', freq: 38.89, solfege: 'Re#' },
-      { note: 'E1', freq: 41.20, solfege: 'Mi' },
-      { note: 'F1', freq: 43.65, solfege: 'Fa' },
-      { note: 'F#1', freq: 46.25, solfege: 'Fa#' },
-      { note: 'G1', freq: 49.00, solfege: 'Sol' },
-      { note: 'G#1', freq: 51.91, solfege: 'Sol#' },
-      { note: 'A1', freq: 55.00, solfege: 'La' },
-      { note: 'A#1', freq: 58.27, solfege: 'La#' },
-      { note: 'B1', freq: 61.74, solfege: 'Ti' },
-      { note: 'C2', freq: 65.41, solfege: 'Do' },
-      { note: 'C#2', freq: 69.30, solfege: 'Do#' },
-      { note: 'D2', freq: 73.42, solfege: 'Re' },
-      { note: 'D#2', freq: 77.78, solfege: 'Re#' },
-      { note: 'E2', freq: 82.41, solfege: 'Mi' },
-      { note: 'F2', freq: 87.31, solfege: 'Fa' },
-      { note: 'F#2', freq: 92.50, solfege: 'Fa#' },
-      { note: 'G2', freq: 98.00, solfege: 'Sol' },
-      { note: 'G#2', freq: 103.83, solfege: 'Sol#' },
-      { note: 'A2', freq: 110.00, solfege: 'La' },
-      { note: 'A#2', freq: 116.54, solfege: 'La#' },
-      { note: 'B2', freq: 123.47, solfege: 'Ti' },
-      { note: 'C3', freq: 130.81, solfege: 'Do' },
-      { note: 'C#3', freq: 138.59, solfege: 'Do#' },
-      { note: 'D3', freq: 146.83, solfege: 'Re' },
-      { note: 'D#3', freq: 155.56, solfege: 'Re#' },
-      { note: 'E3', freq: 164.81, solfege: 'Mi' },
-      { note: 'F3', freq: 174.61, solfege: 'Fa' },
-      { note: 'F#3', freq: 185.00, solfege: 'Fa#' },
-      { note: 'G3', freq: 196.00, solfege: 'Sol' },
-      { note: 'G#3', freq: 207.65, solfege: 'Sol#' },
-      { note: 'A3', freq: 220.00, solfege: 'La' },
-      { note: 'A#3', freq: 233.08, solfege: 'La#' },
-      { note: 'B3', freq: 246.94, solfege: 'Ti' },
-      { note: 'C4', freq: 261.63, solfege: 'Do' },
-      { note: 'C#4', freq: 277.18, solfege: 'Do#' },
-      { note: 'D4', freq: 293.66, solfege: 'Re' },
-      { note: 'D#4', freq: 311.13, solfege: 'Re#' },
-      { note: 'E4', freq: 329.63, solfege: 'Mi' },
-      { note: 'F4', freq: 349.23, solfege: 'Fa' },
-      { note: 'F#4', freq: 369.99, solfege: 'Fa#' },
-      { note: 'G4', freq: 392.00, solfege: 'Sol' },
-      { note: 'G#4', freq: 415.30, solfege: 'Sol#' },
-      { note: 'A4', freq: 440.00, solfege: 'La' },
-      { note: 'A#4', freq: 466.16, solfege: 'La#' },
-      { note: 'B4', freq: 493.88, solfege: 'Ti' },
-      { note: 'C5', freq: 523.25, solfege: 'Do' },
-      { note: 'C#5', freq: 554.37, solfege: 'Do#' },
-      { note: 'D5', freq: 587.33, solfege: 'Re' },
-      { note: 'D#5', freq: 622.25, solfege: 'Re#' },
-      { note: 'E5', freq: 659.25, solfege: 'Mi' },
-      { note: 'F5', freq: 698.46, solfege: 'Fa' },
-      { note: 'F#5', freq: 739.99, solfege: 'Fa#' },
-      { note: 'G5', freq: 783.99, solfege: 'Sol' },
-      { note: 'G#5', freq: 830.61, solfege: 'Sol#' },
-      { note: 'A5', freq: 880.00, solfege: 'La' },
-      { note: 'A#5', freq: 932.33, solfege: 'La#' },
-      { note: 'B5', freq: 987.77, solfege: 'Ti' },
-      { note: 'C6', freq: 1046.50, solfege: 'Do' }
-    ];
+        // Start pitch detection after getting audio permission
+        async function startPitchDetect() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    // Initialize the pitch detector using pitchdetect.js
-    let audioContext = null;
-    let pitchDetector = null;
-    let isMicrophoneGranted = false;
+            mediaStreamSource = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            mediaStreamSource.connect(analyser);
 
-    function errorCallback(err) {
-      console.log('Error accessing microphone:', err);
-      document.getElementById('log').innerText = `Error: ${err}`;
-    }
-
-    function startPitchDetection() {
-      if (!isMicrophoneGranted) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(stream => {
-            audioContext = new AudioContext();
-            const mediaStreamSource = audioContext.createMediaStreamSource(stream);
-            pitchDetector = PitchDetector.forMediaStream(mediaStreamSource);
-            isMicrophoneGranted = true;
-            document.getElementById('log').innerText = 'Microphone access granted';
-            detectPitch();
-          })
-          .catch(errorCallback);
-      }
-    }
-
-    function detectPitch() {
-      pitchDetector.on('pitch', event => {
-        const pitch = event.frequency;
-        document.getElementById('log').innerText = `Pitch detected: ${pitch.toFixed(2)} Hz`;
-        const noteData = getNoteFromFrequency(pitch);
-        if (noteData) {
-          document.getElementById('noteDisplay').innerText = `Note: ${noteData.note}`;
-          document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
+            updatePitch();
         }
-      });
 
-      pitchDetector.start();
-    }
+        // Update pitch and display note/frequency
+        function updatePitch() {
+            const bufferLength = analyser.fftSize;
+            const buffer = new Float32Array(bufferLength);
+            analyser.getFloatTimeDomainData(buffer);
 
-    function getNoteFromFrequency(frequency) {
-      let closest = noteFrequencies.reduce((prev, curr) => {
-        return (Math.abs(curr.freq - frequency) < Math.abs(prev.freq - frequency) ? curr : prev);
-      });
-      return closest;
-    }
+            const ac = autoCorrelate(buffer, audioContext.sampleRate);
+            if (ac !== -1) {
+                const pitch = ac;
+                pitchElem.textContent = Math.round(pitch);
 
-    window.onload = function() {
-      startPitchDetection();
-    };
-  </script>
+                const note = noteFromPitch(pitch);
+                noteElem.textContent = noteStrings[note % 12];
+            }
+
+            requestAnimationFrame(updatePitch);
+        }
+
+        // Pitch detection function
+        function autoCorrelate(buffer, sampleRate) {
+            let SIZE = buffer.length;
+            let rms = 0;
+
+            for (let i = 0; i < SIZE; i++) {
+                rms += buffer[i] * buffer[i];
+            }
+            rms = Math.sqrt(rms / SIZE);
+            if (rms < 0.01) return -1;
+
+            let r1 = 0,
+                r2 = SIZE - 1;
+            for (let i = 0; i < SIZE / 2; i++) {
+                if (Math.abs(buffer[i]) < 0.2) {
+                    r1 = i;
+                    break;
+                }
+            }
+            for (let i = 1; i < SIZE / 2; i++) {
+                if (Math.abs(buffer[SIZE - i]) < 0.2) {
+                    r2 = SIZE - i;
+                    break;
+                }
+            }
+
+            buffer = buffer.slice(r1, r2);
+            SIZE = buffer.length;
+
+            let c = new Array(SIZE).fill(0);
+            for (let i = 0; i < SIZE; i++) {
+                for (let j = 0; j < SIZE - i; j++) {
+                    c[i] = c[i] + buffer[j] * buffer[j + i];
+                }
+            }
+
+            let d = 0;
+            while (c[d] > c[d + 1]) d++;
+            let maxval = -1,
+                maxpos = -1;
+            for (let i = d; i < SIZE; i++) {
+                if (c[i] > maxval) {
+                    maxval = c[i];
+                    maxpos = i;
+                }
+            }
+
+            let T0 = maxpos;
+
+            return sampleRate / T0;
+        }
+
+        function noteFromPitch(frequency) {
+            const noteNumber = 12 * (Math.log(frequency / 440) / Math.log(2));
+            return Math.round(noteNumber) + 69;
+        }
+
+        startPitchDetect();
+    </script>
 </body>
 </html>
