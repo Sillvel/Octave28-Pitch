@@ -3,12 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pitch Detector</title>
+  <title>Octave28 Vocal Pitch Detector</title>
   <style>
     body {
+      background-color: #001F3F; /* Background color */
       font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: white;
+    }
+    h1 {
+      font-size: 36px;
+      font-weight: bold;
       text-align: center;
-      margin-top: 50px;
+      margin: 20px 0;
+    }
+    #pitchBox {
+      background-color: #3A6D8C; /* Box color */
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      width: 60%;
     }
     #pitchDisplay {
       font-size: 2rem;
@@ -20,15 +39,20 @@
     }
     #solfegeDisplay {
       font-size: 2rem;
-      color: #333;
+      color: #fff;
     }
   </style>
 </head>
 <body>
-  <h1>Pitch Detector</h1>
-  <div id="pitchDisplay">Pitch: -- Hz</div>
-  <div id="noteDisplay">Note: --</div>
-  <div id="solfegeDisplay">Solfège: --</div>
+
+  <h1>Octave28 Vocal Pitch Detector</h1>
+  
+  <!-- The box containing pitch detection -->
+  <div id="pitchBox">
+    <div id="pitchDisplay">Pitch: -- Hz</div>
+    <div id="noteDisplay">Note: --</div>
+    <div id="solfegeDisplay">Solfège: --</div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.js"></script>
   <script>
@@ -46,6 +70,9 @@
       { name: 'A#', freq: 466.16, solfege: 'La#' },
       { name: 'B', freq: 493.88, solfege: 'Ti' }
     ];
+
+    const baseFrequency = 440; // A4 = 440 Hz
+    const baseNoteIndex = 9;  // A4 is the 10th note (0-indexed)
 
     let audioContext;
     let analyser;
@@ -86,13 +113,11 @@
     }
 
     function getNoteFromFrequency(frequency) {
-      const minDiff = Math.min(...notes.map(note => Math.abs(frequency - note.freq)));
-      const note = notes.find(n => Math.abs(frequency - n.freq) === minDiff);
-      if (note) {
-        const octave = Math.round(Math.log2(frequency / note.freq)) + 4;
-        return { ...note, octave };
-      }
-      return null;
+      const noteIndex = Math.round(12 * Math.log2(frequency / baseFrequency)) + baseNoteIndex;
+      const octave = Math.floor(noteIndex / 12) + 4;
+      const noteName = notes[noteIndex % 12].name;
+      const solfege = notes[noteIndex % 12].solfege;
+      return { name: noteName, solfege, octave };
     }
 
     function autoCorrelate(buffer, sampleRate) {
@@ -125,8 +150,8 @@
       return sampleRate / bestOffset;
     }
 
-    // Start pitch detection automatically
     startPitchDetection();
   </script>
 </body>
 </html>
+
