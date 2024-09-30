@@ -78,14 +78,20 @@
     let analyser;
 
     async function startPitchDetection() {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      analyser = audioContext.createAnalyser();
-      source.connect(analyser);
-      analyser.fftSize = 2048;
-      
-      detectPitch();
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Microphone access granted');
+        
+        audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        source.connect(analyser);
+        analyser.fftSize = 2048;
+        
+        detectPitch();
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
+      }
     }
 
     function detectPitch() {
@@ -93,6 +99,7 @@
       analyser.getFloatTimeDomainData(buffer);
       const frequency = autoCorrelate(buffer, audioContext.sampleRate);
       if (frequency !== -1) {
+        console.log('Frequency detected:', frequency);  // Debugging log
         const noteData = getNoteFromFrequency(frequency);
         if (noteData) {
           document.getElementById('pitchDisplay').innerText = `Pitch: ${frequency.toFixed(2)} Hz`;
@@ -107,6 +114,8 @@
             solfege: noteData.solfege
           }, '*');
         }
+      } else {
+        console.log('No pitch detected');
       }
       
       requestAnimationFrame(detectPitch);
@@ -154,4 +163,3 @@
   </script>
 </body>
 </html>
-
