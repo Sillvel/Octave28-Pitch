@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Microphone Input</title>
+  <title>Simple Pitch Detector</title>
   <style>
     body {
       background-color: #001F3F;
@@ -30,13 +30,12 @@
 </head>
 <body>
 
-  <h1>Testing Microphone Input</h1>
+  <h1>Testing Pitch Detection</h1>
   <div id="log">Waiting for microphone...</div>
 
   <script>
-    async function testMicrophone() {
+    async function startPitchDetection() {
       try {
-        // Get microphone access
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         console.log('Microphone access granted');
         document.getElementById('log').innerText = 'Microphone access granted';
@@ -46,25 +45,62 @@
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
         analyser.fftSize = 2048;
-        
-        const buffer = new Uint8Array(analyser.fftSize);
-        function update() {
-          analyser.getByteTimeDomainData(buffer);
 
-          // Display audio input strength as a number to check if microphone is capturing data
-          const average = buffer.reduce((a, b) => a + b) / buffer.length;
-          document.getElementById('log').innerText = `Microphone input level: ${average}`;
+        const buffer = new Float32Array(analyser.fftSize);
 
-          requestAnimationFrame(update);
+        function detectPitch() {
+          analyser.getFloatTimeDomainData(buffer);
+
+          // Simplified pitch detection using autocorrelation
+          const frequency = autoCorrelate(buffer, audioContext.sampleRate);
+          if (frequency !== -1) {
+            document.getElementById('log').innerText = `Pitch detected: ${frequency.toFixed(2)} Hz`;
+          } else {
+            document.getElementById('log').innerText = `No pitch detected`;
+          }
+
+          requestAnimationFrame(detectPitch);
         }
-        update();
+
+        detectPitch();
       } catch (err) {
         console.error('Error accessing microphone:', err);
         document.getElementById('log').innerText = `Error accessing microphone: ${err}`;
       }
     }
 
-    testMicrophone();
+    // Autocorrelation algorithm for pitch detection
+    function autoCorrelate(buffer, sampleRate) {
+      const SIZE = buffer.length;
+      const MAX_SAMPLES = Math.floor(SIZE / 2);
+      let bestOffset = -1;
+      let bestCorrelation = 0;
+      let rms = 0;
+      for (let i = 0; i < SIZE; i++) {
+        const val = buffer[i];
+        rms += val * val;
+      }
+      rms = Math.sqrt(rms / SIZE);
+      if (rms < 0.01) return -1; // No sound detected
+
+      let lastCorrelation = 1;
+      for (let offset = 0; offset < MAX_SAMPLES; offset++) {
+        let correlation = 0;
+        for (let i = 0; i < MAX_SAMPLES; i++) {
+          correlation += Math.abs(buffer[i] - buffer[i + offset]);
+        }
+        correlation = 1 - (correlation / MAX_SAMPLES);
+        if (correlation > 0.9 && correlation > lastCorrelation) {
+          bestCorrelation = correlation;
+          bestOffset = offset;
+        }
+        lastCorrelation = correlation;
+      }
+      if (bestOffset === -1) return -1; // No pitch detected
+      return sampleRate / bestOffset; // Return detected pitch in Hz
+    }
+
+    startPitchDetection();
   </script>
 </body>
 </html>
