@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pitch to Note and Solfège Detector</title>
+  <title>Pitch Detector with Debugging</title>
   <style>
     body {
       background-color: #001F3F;
@@ -81,10 +81,13 @@
           analyser.getFloatTimeDomainData(buffer);
 
           const frequency = autoCorrelate(buffer, audioContext.sampleRate);
+          console.log('Detected frequency:', frequency);  // Debugging log
+
           if (frequency !== -1) {
             document.getElementById('log').innerText = `Pitch detected: ${frequency.toFixed(2)} Hz`;
             const noteData = getNoteFromFrequency(frequency);
             if (noteData) {
+              console.log('Detected note:', noteData.name, 'Detected solfège:', noteData.solfege);  // Debugging log
               document.getElementById('noteDisplay').innerText = `Note: ${noteData.name}`;
               document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
             }
@@ -119,7 +122,7 @@
       if (rms < 0.01) return -1; // No sound detected
 
       let lastCorrelation = 1;
-      for (let offset = 0; let i = 0; i++) {
+      for (let offset = 0; offset < MAX_SAMPLES; offset++) {
         let correlation = 0;
         for (let i = 0; i < MAX_SAMPLES; i++) {
           correlation += Math.abs(buffer[i] - buffer[i + offset]);
