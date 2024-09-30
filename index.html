@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitch Detector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    #pitchDisplay {
+      font-size: 2rem;
+      margin: 20px;
+    }
+    #noteDisplay {
+      font-size: 3rem;
+      font-weight: bold;
+    }
+    #solfegeDisplay {
+      font-size: 2rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pitch Detector</h1>
+  <div id="pitchDisplay">Pitch: -- Hz</div>
+  <div id="noteDisplay">Note: --</div>
+  <div id="solfegeDisplay">Solfège: --</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.js"></script>
+  <script>
+    const notes = [
+      { name: 'C', freq: 261.63, solfege: 'Do' },
+      { name: 'C#', freq: 277.18, solfege: 'Do#' },
+      { name: 'D', freq: 293.66, solfege: 'Re' },
+      { name: 'D#', freq: 311.13, solfege: 'Re#' },
+      { name: 'E', freq: 329.63, solfege: 'Mi' },
+      { name: 'F', freq: 349.23, solfege: 'Fa' },
+      { name: 'F#', freq: 369.99, solfege: 'Fa#' },
+      { name: 'G', freq: 392.00, solfege: 'Sol' },
+      { name: 'G#', freq: 415.30, solfege: 'Sol#' },
+      { name: 'A', freq: 440.00, solfege: 'La' },
+      { name: 'A#', freq: 466.16, solfege: 'La#' },
+      { name: 'B', freq: 493.88, solfege: 'Ti' }
+    ];
+
+    let audioContext;
+    let analyser;
+
+    async function startPitchDetection() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      analyser = audioContext.createAnalyser();
+      source.connect(analyser);
+      analyser.fftSize = 2048;
+      
+      detectPitch();
+    }
+
+    function detectPitch() {
+      const buffer = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(buffer);
+      const frequency = autoCorrelate(buffer, audioContext.sampleRate);
+      if (frequency !== -1) {
+        const noteData = getNoteFromFrequency(frequency);
+        if (noteData) {
+          document.getElementById('pitchDisplay').innerText = `Pitch: ${frequency.toFixed(2)} Hz`;
+          document.getElementById('noteDisplay').innerText = `Note: ${noteData.name}${noteData.octave}`;
+          document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
+          
+          // Send detected pitch data to parent (Wix)
+          window.parent.postMessage({
+            action: 'pitchDetected',
+            pitch: frequency.toFixed(2),
+            note: noteData.name + noteData.octave,
+            solfege: noteData.solfege
+          }, '*');
+        }
+      }
+      
+      requestAnimationFrame(detectPitch);
+    }
+
+    function getNoteFromFrequency(frequency) {
+      const minDiff = Math.min(...notes.map(note => Math.abs(frequency - note.freq)));
+      const note = notes.find(n => Math.abs(frequency - n.freq) === minDiff);
+      if (note) {
+        const octave = Math.round(Math.log2(frequency / note.freq)) + 4;
+        return { ...note, octave };
+      }
+      return null;
+    }
+
+    function autoCorrelate(buffer, sampleRate) {
+      const SIZE = buffer.length;
+      const MAX_SAMPLES = Math.floor(SIZE / 2);
+      let bestOffset = -1;
+      let bestCorrelation = 0;
+      let rms = 0;
+      for (let i = 0; i < SIZE; i++) {
+        const val = buffer[i];
+        rms += val * val;
+      }
+      rms = Math.sqrt(rms / SIZE);
+      if (rms < 0.01) return -1;
+
+      let lastCorrelation = 1;
+      for (let offset = 0; offset < MAX_SAMPLES; offset++) {
+        let correlation = 0;
+        for (let i = 0; i < MAX_SAMPLES; i++) {
+          correlation += Math.abs(buffer[i] - buffer[i + offset]);
+        }
+        correlation = 1 - (correlation / MAX_SAMPLES);
+        if (correlation > 0.9 && correlation > lastCorrelation) {
+          bestCorrelation = correlation;
+          bestOffset = offset;
+        }
+        lastCorrelation = correlation;
+      }
+      if (bestOffset === -1) return -1;
+      return sampleRate / bestOffset;
+    }
+
+    // Start pitch detection automatically
+    startPitchDetection();
+  </script>
+</body>
+</html>
