@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pitch Detector with Improved Mapping</title>
+  <title>Hertz Detection Only</title>
   <style>
     body {
       background-color: #001F3F;
@@ -36,56 +36,13 @@
 </head>
 <body>
 
-  <h1>Octave28 Pitch Detector</h1>
+  <h1>Hertz Detection Only</h1>
 
   <button id="startButton">Start Pitch Detection</button>
 
   <div id="log">Waiting for microphone...</div>
-  <div id="noteDisplay">Note: --</div>
-  <div id="solfegeDisplay">Solfège: --</div>
 
   <script>
-    const noteFrequencies = [
-      { note: 'C0', freq: 16.35, solfege: 'Do' },
-      { note: 'C#0', freq: 17.32, solfege: 'Do#' },
-      { note: 'D0', freq: 18.35, solfege: 'Re' },
-      { note: 'D#0', freq: 19.45, solfege: 'Re#' },
-      { note: 'E0', freq: 20.60, solfege: 'Mi' },
-      { note: 'F0', freq: 21.83, solfege: 'Fa' },
-      { note: 'F#0', freq: 23.12, solfege: 'Fa#' },
-      { note: 'G0', freq: 24.50, solfege: 'Sol' },
-      { note: 'G#0', freq: 25.96, solfege: 'Sol#' },
-      { note: 'A0', freq: 27.50, solfege: 'La' },
-      { note: 'A#0', freq: 29.14, solfege: 'La#' },
-      { note: 'B0', freq: 30.87, solfege: 'Ti' },
-      { note: 'C1', freq: 32.70, solfege: 'Do' },
-      { note: 'C#1', freq: 34.65, solfege: 'Do#' },
-      { note: 'D1', freq: 36.71, solfege: 'Re' },
-      { note: 'D#1', freq: 38.89, solfege: 'Re#' },
-      { note: 'E1', freq: 41.20, solfege: 'Mi' },
-      { note: 'F1', freq: 43.65, solfege: 'Fa' },
-      { note: 'F#1', freq: 46.25, solfege: 'Fa#' },
-      { note: 'G1', freq: 49.00, solfege: 'Sol' },
-      { note: 'G#1', freq: 51.91, solfege: 'Sol#' },
-      { note: 'A1', freq: 55.00, solfege: 'La' },
-      { note: 'A#1', freq: 58.27, solfege: 'La#' },
-      { note: 'B1', freq: 61.74, solfege: 'Ti' },
-      // Continue adding more notes and their frequencies
-      { note: 'C2', freq: 65.41, solfege: 'Do' },
-      { note: 'C3', freq: 130.81, solfege: 'Do' },
-      { note: 'C4', freq: 261.63, solfege: 'Do' },
-      { note: 'A4', freq: 440.00, solfege: 'La' },
-      // Add more notes...
-    ];
-
-    // Function to map detected frequency to note
-    function getNoteFromFrequency(frequency) {
-      let closest = noteFrequencies.reduce((prev, curr) => {
-        return (Math.abs(curr.freq - frequency) < Math.abs(prev.freq - frequency) ? curr : prev);
-      });
-      return closest;
-    }
-
     // Pitch detection using auto-correlation
     async function startPitchDetection() {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -103,15 +60,8 @@
 
         if (pitch !== -1) {
           document.getElementById('log').innerText = `Pitch detected: ${pitch.toFixed(2)} Hz`;
-          const noteData = getNoteFromFrequency(pitch);
-          if (noteData) {
-            document.getElementById('noteDisplay').innerText = `Note: ${noteData.note}`;
-            document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
-          }
         } else {
-          document.getElementById('log').innerText = 'No pitch detected';
-          document.getElementById('noteDisplay').innerText = 'Note: --';
-          document.getElementById('solfegeDisplay').innerText = 'Solfège: --';
+          document.getElementById('log').innerText = `No pitch detected`;
         }
 
         requestAnimationFrame(detectPitch);
@@ -134,7 +84,6 @@
 
       let bestOffset = -1;
       let bestCorrelation = 0;
-      let lastCorrelation = 1;
 
       for (let offset = 0; offset < SIZE / 2; offset++) {
         let correlation = 0;
@@ -144,12 +93,10 @@
         }
         correlation = 1 - (correlation / (SIZE / 2));
 
-        if (correlation > bestCorrelation && correlation > 0.9) {
+        if (correlation > bestCorrelation) {
           bestCorrelation = correlation;
           bestOffset = offset;
         }
-
-        lastCorrelation = correlation;
       }
 
       if (bestCorrelation > 0.9) {
@@ -166,3 +113,5 @@
   </script>
 </body>
 </html>
+
+      
