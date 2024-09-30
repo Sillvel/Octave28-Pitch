@@ -46,22 +46,21 @@
 
   <script>
     const notes = [
-      { name: 'C', freq: 261.63, solfege: 'Do' },
-      { name: 'C#', freq: 277.18, solfege: 'Do#' },
-      { name: 'D', freq: 293.66, solfege: 'Re' },
-      { name: 'D#', freq: 311.13, solfege: 'Re#' },
-      { name: 'E', freq: 329.63, solfege: 'Mi' },
-      { name: 'F', freq: 349.23, solfege: 'Fa' },
-      { name: 'F#', freq: 369.99, solfege: 'Fa#' },
-      { name: 'G', freq: 392.00, solfege: 'Sol' },
-      { name: 'G#', freq: 415.30, solfege: 'Sol#' },
-      { name: 'A', freq: 440.00, solfege: 'La' },
-      { name: 'A#', freq: 466.16, solfege: 'La#' },
-      { name: 'B', freq: 493.88, solfege: 'Ti' }
+      { name: 'C', solfege: 'Do' },
+      { name: 'C#', solfege: 'Do#' },
+      { name: 'D', solfege: 'Re' },
+      { name: 'D#', solfege: 'Re#' },
+      { name: 'E', solfege: 'Mi' },
+      { name: 'F', solfege: 'Fa' },
+      { name: 'F#', solfege: 'Fa#' },
+      { name: 'G', solfege: 'Sol' },
+      { name: 'G#', solfege: 'Sol#' },
+      { name: 'A', solfege: 'La' },
+      { name: 'A#', solfege: 'La#' },
+      { name: 'B', solfege: 'Ti' }
     ];
 
     const baseFrequency = 440; // A4 = 440 Hz
-    const baseNoteIndex = 9;  // A4 is the 10th note (0-indexed)
 
     async function startPitchDetection() {
       try {
@@ -88,7 +87,7 @@
 
             const noteData = getNoteFromFrequency(frequency);
             if (noteData) {
-              console.log('Detected note:', noteData.name, 'Detected solfège:', noteData.solfege);  // Log detected note and solfège
+              console.log('Detected note:', noteData.name, 'Detected solfege:', noteData.solfege);  // Log detected note and solfege
               document.getElementById('noteDisplay').innerText = `Note: ${noteData.name}`;
               document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
             }
@@ -139,14 +138,14 @@
       return sampleRate / bestOffset; // Return detected pitch in Hz
     }
 
-    // Map detected frequency to note and solfège
+    // Map detected frequency to note and solfège, including octave
     function getNoteFromFrequency(frequency) {
-      const noteIndex = Math.round(12 * Math.log2(frequency / baseFrequency)) + baseNoteIndex;
-      console.log('Note index calculated:', noteIndex); // Log the calculated note index
+      const noteIndex = Math.round(12 * Math.log2(frequency / baseFrequency)) % 12; // Normalize the note index
+      const octave = Math.floor(Math.log2(frequency / baseFrequency) + 4); // Calculate the octave number
 
       if (noteIndex >= 0 && noteIndex < notes.length) {
-        const noteName = notes[noteIndex % 12].name;
-        const solfege = notes[noteIndex % 12].solfege;
+        const noteName = notes[noteIndex].name + octave;
+        const solfege = notes[noteIndex].solfege;
         return { name: noteName, solfege };
       } else {
         console.log('Invalid note index:', noteIndex);
