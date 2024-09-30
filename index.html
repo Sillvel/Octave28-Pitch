@@ -88,9 +88,9 @@
 
             const noteData = getNoteFromFrequency(frequency);
             if (noteData) {
+              console.log('Detected note:', noteData.name, 'Detected solfège:', noteData.solfege);  // Log detected note and solfège
               document.getElementById('noteDisplay').innerText = `Note: ${noteData.name}`;
               document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
-              console.log('Detected note:', noteData.name, 'Detected solfège:', noteData.solfege);  // Log detected note and solfège
             }
           } else {
             document.getElementById('log').innerText = `No pitch detected`;
@@ -142,9 +142,16 @@
     // Map detected frequency to note and solfège
     function getNoteFromFrequency(frequency) {
       const noteIndex = Math.round(12 * Math.log2(frequency / baseFrequency)) + baseNoteIndex;
-      const noteName = notes[noteIndex % 12].name;
-      const solfege = notes[noteIndex % 12].solfege;
-      return { name: noteName, solfege };
+      console.log('Note index calculated:', noteIndex); // Log the calculated note index
+
+      if (noteIndex >= 0 && noteIndex < notes.length) {
+        const noteName = notes[noteIndex % 12].name;
+        const solfege = notes[noteIndex % 12].solfege;
+        return { name: noteName, solfege };
+      } else {
+        console.log('Invalid note index:', noteIndex);
+        return null;
+      }
     }
 
     startPitchDetection();
