@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pitch Detection Test</title>
+  <title>Pitch to Note and Solfège Detector</title>
   <style>
     body {
       background-color: #001F3F;
@@ -26,14 +26,43 @@
       color: white;
       margin-top: 20px;
     }
+    #noteDisplay {
+      font-size: 28px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    #solfegeDisplay {
+      font-size: 24px;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Basic Pitch Detection (Hz)</h1>
+  <h1>Pitch Detector with Note and Solfège</h1>
   <div id="log">Waiting for microphone...</div>
+  <div id="noteDisplay">Note: --</div>
+  <div id="solfegeDisplay">Solfège: --</div>
 
   <script>
+    const notes = [
+      { name: 'C', freq: 261.63, solfege: 'Do' },
+      { name: 'C#', freq: 277.18, solfege: 'Do#' },
+      { name: 'D', freq: 293.66, solfege: 'Re' },
+      { name: 'D#', freq: 311.13, solfege: 'Re#' },
+      { name: 'E', freq: 329.63, solfege: 'Mi' },
+      { name: 'F', freq: 349.23, solfege: 'Fa' },
+      { name: 'F#', freq: 369.99, solfege: 'Fa#' },
+      { name: 'G', freq: 392.00, solfege: 'Sol' },
+      { name: 'G#', freq: 415.30, solfege: 'Sol#' },
+      { name: 'A', freq: 440.00, solfege: 'La' },
+      { name: 'A#', freq: 466.16, solfege: 'La#' },
+      { name: 'B', freq: 493.88, solfege: 'Ti' }
+    ];
+
+    const baseFrequency = 440; // A4 = 440 Hz
+    const baseNoteIndex = 9;  // A4 is the 10th note (0-indexed)
+
     async function startPitchDetection() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -56,8 +85,17 @@
 
           if (frequency !== -1) {
             document.getElementById('log').innerText = `Pitch detected: ${frequency.toFixed(2)} Hz`;
+
+            const noteData = getNoteFromFrequency(frequency);
+            if (noteData) {
+              document.getElementById('noteDisplay').innerText = `Note: ${noteData.name}`;
+              document.getElementById('solfegeDisplay').innerText = `Solfège: ${noteData.solfege}`;
+              console.log('Detected note:', noteData.name, 'Detected solfège:', noteData.solfege);  // Log detected note and solfège
+            }
           } else {
             document.getElementById('log').innerText = `No pitch detected`;
+            document.getElementById('noteDisplay').innerText = `Note: --`;
+            document.getElementById('solfegeDisplay').innerText = `Solfège: --`;
           }
 
           requestAnimationFrame(detectPitch);
@@ -99,6 +137,14 @@
       }
       if (bestOffset === -1) return -1; // No pitch detected
       return sampleRate / bestOffset; // Return detected pitch in Hz
+    }
+
+    // Map detected frequency to note and solfège
+    function getNoteFromFrequency(frequency) {
+      const noteIndex = Math.round(12 * Math.log2(frequency / baseFrequency)) + baseNoteIndex;
+      const noteName = notes[noteIndex % 12].name;
+      const solfege = notes[noteIndex % 12].solfege;
+      return { name: noteName, solfege };
     }
 
     startPitchDetection();
