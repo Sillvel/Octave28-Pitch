@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hertz Detection Only</title>
+  <title>Hertz Detection Fix</title>
   <style>
     body {
       background-color: #001F3F;
@@ -36,7 +36,7 @@
 </head>
 <body>
 
-  <h1>Hertz Detection Only</h1>
+  <h1>Hertz Detection Fix</h1>
 
   <button id="startButton">Start Pitch Detection</button>
 
@@ -58,10 +58,10 @@
         analyser.getFloatTimeDomainData(buffer);
         const pitch = autoCorrelate(buffer, audioContext.sampleRate);
 
-        if (pitch !== -1) {
+        if (pitch !== -1 && isFinite(pitch)) {
           document.getElementById('log').innerText = `Pitch detected: ${pitch.toFixed(2)} Hz`;
         } else {
-          document.getElementById('log').innerText = `No pitch detected`;
+          document.getElementById('log').innerText = `No valid pitch detected`;
         }
 
         requestAnimationFrame(detectPitch);
@@ -70,17 +70,19 @@
       detectPitch();
     }
 
-    // Auto-correlation algorithm for pitch detection
+    // Improved Auto-correlation algorithm for pitch detection
     function autoCorrelate(buffer, sampleRate) {
       const SIZE = buffer.length;
       let rms = 0;
 
+      // Calculate the root mean square (RMS) of the signal to check signal strength
       for (let i = 0; i < SIZE; i++) {
         rms += buffer[i] * buffer[i];
       }
       rms = Math.sqrt(rms / SIZE);
 
-      if (rms < 0.01) return -1; // No signal
+      // If the signal is too weak, return -1 (no valid signal)
+      if (rms < 0.01) return -1; // No significant signal
 
       let bestOffset = -1;
       let bestCorrelation = 0;
@@ -99,11 +101,12 @@
         }
       }
 
-      if (bestCorrelation > 0.9) {
-        const frequency = sampleRate / bestOffset;
-        return frequency;
-      }
-      return -1;
+      // If bestCorrelation is too low or bestOffset is zero, return -1 (no valid frequency)
+      if (bestCorrelation < 0.9 || bestOffset === 0) return -1;
+
+      // Prevent division by zero and calculate the frequency
+      const frequency = sampleRate / bestOffset;
+      return isFinite(frequency) ? frequency : -1;
     }
 
     // Start pitch detection when the button is clicked
@@ -113,5 +116,4 @@
   </script>
 </body>
 </html>
-
       
