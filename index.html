@@ -1,125 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple Pitch Detector Debug</title>
-  <style>
-    body {
-      background-color: #001F3F;
-      font-family: Arial, sans-serif;
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
-
-    h1 {
-      font-size: 36px;
-      margin-bottom: 20px;
-    }
-
-    #log {
-      font-size: 24px;
-      color: white;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 18px;
-      background-color: #0074D9;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #005BB5;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Detection</title>
+    <script src="https://unpkg.com/pitchy@1.0.0/dist/pitchy.min.js"></script>
 </head>
 <body>
-
-  <!-- Title -->
-  <h1>Octave28 Pitch Detector - Debug Version</h1>
-
-  <!-- Button to start pitch detection -->
-  <button id="startButton">Start Pitch Detection</button>
-
-  <!-- Pitch Detector Section -->
-  <div id="log">Waiting for microphone...</div>
-
-  <script>
-    // Pitch detection using auto-correlation
-    async function startPitchDetection() {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      const source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
-
-      const buffer = new Float32Array(analyser.fftSize);
-
-      function detectPitch() {
-        analyser.getFloatTimeDomainData(buffer);
-        const pitch = autoCorrelate(buffer, audioContext.sampleRate);
-
-        if (pitch !== -1) {
-          document.getElementById('log').innerText = `Pitch detected: ${pitch.toFixed(2)} Hz`;
-        } else {
-          document.getElementById('log').innerText = 'No pitch detected';
-        }
-
-        requestAnimationFrame(detectPitch);
-      }
-
-      detectPitch();
-    }
-
-    // Auto-correlation algorithm for pitch detection
-    function autoCorrelate(buffer, sampleRate) {
-      const SIZE = buffer.length;
-      let rms = 0;
-
-      for (let i = 0; i < SIZE; i++) {
-        rms += buffer[i] * buffer[i];
-      }
-      rms = Math.sqrt(rms / SIZE);
-
-      if (rms < 0.01) return -1; // No signal
-
-      let bestOffset = -1;
-      let bestCorrelation = 0;
-      let lastCorrelation = 1;
-
-      for (let offset = 0; offset < SIZE / 2; offset++) {
-        let correlation = 0;
-
-        for (let i = 0; i < SIZE / 2; i++) {
-          correlation += Math.abs(buffer[i] - buffer[i + offset]);
-        }
-        correlation = 1 - (correlation / (SIZE / 2));
-
-        if (correlation > bestCorrelation && correlation > 0.9) {
-          bestCorrelation = correlation;
-          bestOffset = offset;
-        }
-
-        lastCorrelation = correlation;
-      }
-
-      if (bestCorrelation > 0.9) {
-        const frequency = sampleRate / bestOffset;
-        return frequency;
-      }
-      return -1;
-    }
-
-    // Start pitch detection when the button is clicked
-    document.getElementById('startButton').addEventListener('click', () => {
-      startPitchDetection();
-    });
-  </script>
+    <h1>Pitch Detection</h1>
+    <button id="startButton">Start Listening</button>
+    <h2>Note: <span id="noteName">-</span></h2>
+    <h2>Solfege: <span id="solfegeName">-</span></h2>
+    <script src="pitchDetection.js"></script>
 </body>
 </html>
