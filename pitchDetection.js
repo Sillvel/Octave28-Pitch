@@ -43,16 +43,19 @@ async function startPitchDetection() {
 
     const buffer = new Float32Array(analyser.fftSize);
 
-    function detectPitch() {
+    // Use Pitchfinder's YIN algorithm to detect pitch
+    const detectPitch = Pitchfinder.YIN({ sampleRate: audioContext.sampleRate });
+
+    function processPitch() {
         if (!pitchDetecting) {
             micStream.getTracks().forEach(track => track.stop());
             return;
         }
 
         analyser.getFloatTimeDomainData(buffer);
-        const [pitch, clarity] = pitchy.detectPitch(buffer, audioContext.sampleRate);
+        const pitch = detectPitch(buffer);
 
-        if (clarity > 0.8) {
+        if (pitch) {
             const note = frequencyToNote(pitch);
             const solfege = solfegeMap[note.split(/[0-9]/)[0]];
             noteName.textContent = note;
@@ -62,10 +65,10 @@ async function startPitchDetection() {
             solfegeName.textContent = '-';
         }
 
-        requestAnimationFrame(detectPitch);
+        requestAnimationFrame(processPitch);
     }
 
-    detectPitch();
+    processPitch();
 }
 
 function frequencyToNote(frequency) {
