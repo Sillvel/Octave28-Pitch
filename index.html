@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Microphone Input Debug</title>
+  <title>Improved Pitch Detection</title>
   <style>
     body {
       background-color: #001F3F;
@@ -36,14 +36,14 @@
 </head>
 <body>
 
-  <h1>Microphone Input Debug</h1>
+  <h1>Improved Pitch Detection</h1>
 
   <button id="startButton">Start Pitch Detection</button>
 
   <div id="log">Waiting for microphone...</div>
 
   <script>
-    async function startMicrophone() {
+    async function startPitchDetection() {
       try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -54,39 +54,73 @@
 
         const buffer = new Float32Array(analyser.fftSize);
 
-        function analyzeAudio() {
+        function detectPitch() {
           analyser.getFloatTimeDomainData(buffer);
           
-          // Log raw audio data to check if the microphone input is working
-          console.log(buffer);
-          
-          // Check if the RMS (signal strength) is above a small threshold
-          let rms = 0;
-          for (let i = 0; i < buffer.length; i++) {
-            rms += buffer[i] * buffer[i];
-          }
-          rms = Math.sqrt(rms / buffer.length);
+          // Detect the pitch using auto-correlation
+          const pitch = autoCorrelate(buffer, audioContext.sampleRate);
 
-          // If there's a signal, update the log, otherwise, show no signal
-          if (rms > 0.01) {
-            document.getElementById('log').innerText = `Audio data detected with RMS: ${rms.toFixed(4)}`;
+          // Check if a valid pitch is detected
+          if (pitch !== -1 && isFinite(pitch)) {
+            document.getElementById('log').innerText = `Pitch detected: ${pitch.toFixed(2)} Hz`;
           } else {
-            document.getElementById('log').innerText = `No significant audio signal`;
+            document.getElementById('log').innerText = `No valid pitch detected`;
           }
 
-          requestAnimationFrame(analyzeAudio);
+          requestAnimationFrame(detectPitch);
         }
 
-        analyzeAudio();
+        detectPitch();
       } catch (error) {
         document.getElementById('log').innerText = `Error accessing microphone: ${error.message}`;
         console.error("Error accessing microphone", error);
       }
     }
 
+    // Auto-correlation function for pitch detection
+    function autoCorrelate(buffer, sampleRate) {
+      const SIZE = buffer.length;
+      let rms = 0;
+
+      // Calculate RMS to check the signal strength
+      for (let i = 0; i < SIZE; i++) {
+        rms += buffer[i] * buffer[i];
+      }
+      rms = Math.sqrt(rms / SIZE);
+
+      // If RMS is too small, return -1 (no valid signal)
+      if (rms < 0.02) return -1;  // Adjusted threshold to ignore noise
+
+      let bestOffset = -1;
+      let bestCorrelation = 0;
+
+      for (let offset = 0; offset < SIZE / 2; offset++) {
+        let correlation = 0;
+
+        for (let i = 0; i < SIZE / 2; i++) {
+          correlation += Math.abs(buffer[i] - buffer[i + offset]);
+        }
+        correlation = 1 - (correlation / (SIZE / 2));
+
+        if (correlation > bestCorrelation) {
+          bestCorrelation = correlation;
+          bestOffset = offset;
+        }
+      }
+
+      // If the best correlation isn't high enough, return -1 (no valid frequency)
+      if (bestCorrelation < 0.9 || bestOffset === 0) return -1;
+
+      // Return the calculated frequency
+      const frequency = sampleRate / bestOffset;
+      return isFinite(frequency) ? frequency : -1;
+    }
+
+    // Start pitch detection when the button is clicked
     document.getElementById('startButton').addEventListener('click', () => {
-      startMicrophone();
+      startPitchDetection();
     });
   </script>
 </body>
 </html>
+
