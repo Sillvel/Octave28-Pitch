@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Improved Pitch Detection</title>
+  <title>Basic Pitch Detection Test</title>
   <style>
     body {
       background-color: #001F3F;
@@ -36,7 +36,7 @@
 </head>
 <body>
 
-  <h1>Improved Pitch Detection</h1>
+  <h1>Basic Pitch Detection Test</h1>
 
   <button id="startButton">Start Pitch Detection</button>
 
@@ -57,10 +57,10 @@
         function detectPitch() {
           analyser.getFloatTimeDomainData(buffer);
           
-          // Detect the pitch using auto-correlation
-          const pitch = autoCorrelate(buffer, audioContext.sampleRate);
+          // Run the basic pitch detection logic
+          const pitch = basicPitchDetect(buffer, audioContext.sampleRate);
 
-          // Check if a valid pitch is detected
+          // Display the pitch or a message if no valid pitch was found
           if (pitch !== -1 && isFinite(pitch)) {
             document.getElementById('log').innerText = `Pitch detected: ${pitch.toFixed(2)} Hz`;
           } else {
@@ -77,46 +77,28 @@
       }
     }
 
-    // Auto-correlation function for pitch detection
-    function autoCorrelate(buffer, sampleRate) {
-      const SIZE = buffer.length;
-      let rms = 0;
+    // Simple pitch detection using zero-crossing method
+    function basicPitchDetect(buffer, sampleRate) {
+      let size = buffer.length;
+      let threshold = 0.2; // Minimum signal strength to detect zero crossings
+      let crossings = 0;
 
-      // Calculate RMS to check the signal strength
-      for (let i = 0; i < SIZE; i++) {
-        rms += buffer[i] * buffer[i];
-      }
-      rms = Math.sqrt(rms / SIZE);
-
-      // If RMS is too small, return -1 (no valid signal)
-      if (rms < 0.02) return -1;  // Adjusted threshold to ignore noise
-
-      let bestOffset = -1;
-      let bestCorrelation = 0;
-
-      for (let offset = 0; offset < SIZE / 2; offset++) {
-        let correlation = 0;
-
-        for (let i = 0; i < SIZE / 2; i++) {
-          correlation += Math.abs(buffer[i] - buffer[i + offset]);
-        }
-        correlation = 1 - (correlation / (SIZE / 2));
-
-        if (correlation > bestCorrelation) {
-          bestCorrelation = correlation;
-          bestOffset = offset;
+      for (let i = 1; i < size; i++) {
+        if ((buffer[i - 1] < 0 && buffer[i] >= 0) || (buffer[i - 1] > 0 && buffer[i] <= 0)) {
+          if (Math.abs(buffer[i] - buffer[i - 1]) > threshold) {
+            crossings++;
+          }
         }
       }
 
-      // If the best correlation isn't high enough, return -1 (no valid frequency)
-      if (bestCorrelation < 0.9 || bestOffset === 0) return -1;
-
-      // Return the calculated frequency
-      const frequency = sampleRate / bestOffset;
-      return isFinite(frequency) ? frequency : -1;
+      if (crossings > 0) {
+        const frequency = sampleRate / (2 * crossings); // Estimating frequency using zero crossings
+        return frequency;
+      } else {
+        return -1;  // No valid pitch detected
+      }
     }
 
-    // Start pitch detection when the button is clicked
     document.getElementById('startButton').addEventListener('click', () => {
       startPitchDetection();
     });
@@ -124,3 +106,4 @@
 </body>
 </html>
 
+    
